@@ -16,3 +16,53 @@ img {
   display: block;
   max-width: 100%;
 }
+
+button[data-start],
+button[data-stop] {
+  background-color: transparent;
+  outline: solid 1px black;
+  border-radius: 5px;
+
+  height: 50px;
+  width: 100px;
+}
+
+.timer {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  font-size: 30px;
+}
+
+.field {
+  display: flex;
+  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.value {
+  font-size: 50px;
+}
+
+.menu {
+  list-style: none;
+}
+
+.menu a,
+p>a {
+  display: inline-block;
+  text-decoration: none;
+  color: black;
+  border: 1px solid black;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.menu a:hover,
+p>a:hover {
+  color: white;
+  background-color: black;
+}
