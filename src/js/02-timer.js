@@ -1,17 +1,17 @@
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-import Notiflix from 'notiflix';
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
-const textEll = document.querySelector('#datetime-picker');
-const btnStartEll = document.querySelector('[data-start]');
-const daysEll = document.querySelector('[data-days]');
-const hoursEll = document.querySelector('[data-hours]');
-const minutesEll = document.querySelector('[data-minutes]');
-const secondstEll = document.querySelector('[data-seconds]');
+const refs = {
+  datetime: document.querySelector('#datetime-picker'),
+  btnStart: document.querySelector('[data-start]'),
+  dataDays: document.querySelector('[data-days]'),
+  dataHours: document.querySelector('[data-hours]'),
+  dataMinutes: document.querySelector('[data-minutes]'),
+  dataSeconds: document.querySelector('[data-seconds]'),
+};
 
-const currentDate = new Date();
-let timeRemain = {};
-let msTimeRemain = null;
+refs.btnStart.disabled = true;
 
 const options = {
   enableTime: true,
@@ -19,51 +19,73 @@ const options = {
   defaultDate: new Date(),
   minuteIncrement: 1,
   onClose(selectedDates) {
-    console.log(selectedDates[0]);
-    msTimeRemain = selectedDates[0] - currentDate;
-
-    if (selectedDates[0].getTime() < currentDate.getTime()) {
-      Notiflix.Notify.failure('Please choose a date in the future');
-      btnStartEll.setAttribute('disabled', 'true');
+    if (selectedDates[0] < Date.now()) {
+      Notify.failure('Please choose a date in the future');
     } else {
-      btnStartEll.removeAttribute('disabled');
+      refs.btnStart.disabled = false;
     }
   },
 };
 
-flatpickr(textEll, options);
-btnStartEll.addEventListener('click', btnStartHendler);
-btnStartEll.setAttribute('disabled', 'true');
+const datetimePicker = flatpickr('#datetime-picker', options);
 
-function btnStartHendler() {
-  setInterval(() => {
-    if (msTimeRemain <= 0) {
+class TimerCountDown {
+  constructor({ onCount }) {
+    this.intervalId = null;
+    this.isActive = false;
+    this.onCount = onCount;
+  };
+
+  start() {
+    if (this.isActive) {
       return;
     }
-    timeRemain = convertMs(msTimeRemain);
-    daysEll.textContent = timeRemain.days.toString().padStart(2, '0');
-    hoursEll.textContent = timeRemain.hours.toString().padStart(2, '0');
-    minutesEll.textContent = timeRemain.minutes.toString().padStart(2, '0');
-    secondstEll.textContent = timeRemain.seconds.toString().padStart(2, '0');
-    msTimeRemain -= 1000;
-  }, 1000);
-}
+    const startTime = datetimePicker.selectedDates[0].getTime();
+    this.isActive = true;
 
-function convertMs(ms) {
-  // Number of milliseconds per unit of time
+    this.intervalId = setInterval(() => {
+      const currentTime = Date.now();
+      const deltaTime = startTime - currentTime;
+      const time = this.convertMs(deltaTime);
+      this.onCount(time);
+
+      if (deltaTime > 1000) {
+        refs.btnStart.disabled = true;
+      } else {
+        clearInterval(this.intervalId);
+      }
+    }, 1000);
+  };
+  convertMs(ms) {
   const second = 1000;
   const minute = second * 60;
   const hour = minute * 60;
   const day = hour * 24;
 
-  // Remaining days
-  const days = Math.floor(ms / day);
-  // Remaining hours
-  const hours = Math.floor((ms % day) / hour);
-  // Remaining minutes
-  const minutes = Math.floor(((ms % day) % hour) / minute);
-  // Remaining seconds
-  const seconds = Math.floor((((ms % day) % hour) % minute) / second);
+  const days = this.addLeadingZero(Math.floor(ms / day));
+  const hours = this.addLeadingZero(Math.floor((ms % day) / hour));
+  const minutes = this.addLeadingZero(Math.floor(((ms % day) % hour) / minute));
+  const seconds = this.addLeadingZero(
+    Math.floor((((ms % day) % hour) % minute) / second)
+  );
 
   return { days, hours, minutes, seconds };
-}
+  };
+  
+  addLeadingZero(value) {
+  return String(value).padStart(2, '0');
+};
+};
+
+const timer = new TimerCountDown({
+  onCount: updateClockFace,
+});
+
+refs.btnStart.addEventListener('click', timer.start.bind(timer));
+
+function updateClockFace({ days, hours, minutes, seconds }) {
+  refs.dataDays.textContent = `${days}`;
+  refs.dataHours.textContent = `${hours}`;
+  refs.dataMinutes.textContent = `${minutes}`;
+  refs.dataSeconds.textContent = `${seconds}`;
+};
